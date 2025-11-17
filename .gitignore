@@ -1,0 +1,234 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+.venv
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# Dados sensíveis
+*.pem
+*.key
+*.crt
+credentials.json
+secrets.yaml
+secrets.yml
+config.local.yml
+
+# AWS
+.aws/
+*.pem
+
+# Banco de Dados
+*.db
+*.sqlite
+*.sqlite3
+agronegocio.db
+
+# Modelos grandes - manter apenas referências
+*.pt
+*.pth
+*.h5
+*.hdf5
+*.onnx
+# Exceções para modelos necessários
+!phase4/modelos_ml/*.pkl
+!phase6/modelo_yolo/best.pt
+
+# Arquivos pickle
+*.pkl
+!phase4/modelos_ml/*.pkl
+
+# Imagens e vídeos grandes
+*.mp4
+*.avi
+*.mov
+*.mkv
+# Exceção para screenshots de documentação
+!docs/aws_screenshots/*.png
+!docs/aws_screenshots/*.jpg
+!docs/*.png
+!docs/*.jpg
+
+# Datasets grandes
+data/raw/*
+data/processed/*
+# Manter exemplos pequenos
+!data/samples/*.csv
+!data/samples/*.json
+
+# Temporários
+/tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# OS específicos
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# Backup files
+*.backup
+*.old
+
+# Compiled files
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# R
+.Rhistory
+.RData
+.Rapp.history
+
+# Coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Sphinx documentation
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# PyBuilder
+target/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath
+*.sage.py
+
+# Spyder
+.spyderproject
+.spyproject
+
+# Rope
+.ropeproject
+
+# mkdocs
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre
+.pyre/
+
+# Node (caso haja ferramentas JS)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraformrc
+terraform.rc
+
+# Cloud
+.aws-sam/
+.chalice/
+
+# Arquivos específicos do projeto
+# ESP32 builds
+phase3/firmware_esp32/build/
+phase3/firmware_esp32/.pio/
+phase3/firmware_esp32/.pioenvs/
+phase3/firmware_esp32/.piolibdeps/
+
+# Análises temporárias
+analysis_temp/
+~/temp_analysis/

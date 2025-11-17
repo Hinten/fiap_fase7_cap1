@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: fazenda_db
+    environment:
+      POSTGRES_DB: agronegocio
+      POSTGRES_USER: fazenda_user
+      POSTGRES_PASSWORD: fazenda_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./phase2/scripts_sql:/docker-entrypoint-initdb.d
+    networks:
+      - fazenda_network
+    restart: unless-stopped
+
+  # Dashboard Streamlit
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fazenda_dashboard
+    environment:
+      - DATABASE_URL=postgresql://fazenda_user:fazenda_pass@postgres:5432/agronegocio
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./dashboard:/app/dashboard
+      - ./phase1:/app/phase1
+      - ./phase2:/app/phase2
+      - ./phase3:/app/phase3
+      - ./phase4:/app/phase4
+      - ./phase6:/app/phase6
+    depends_on:
+      - postgres
+    networks:
+      - fazenda_network
+    restart: unless-stopped
+    command: streamlit run dashboard/app.py
+
+  # API REST (Fase 3)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fazenda_api
+    environment:
+      - DATABASE_URL=postgresql://fazenda_user:fazenda_pass@postgres:5432/agronegocio
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./phase3:/app/phase3
+    depends_on:
+      - postgres
+    networks:
+      - fazenda_network
+    restart: unless-stopped
+    command: uvicorn phase3.api_crud.app:app --host 0.0.0.0 --port 8000
+
+volumes:
+  postgres_data:
+
+networks:
+  fazenda_network:
+    driver: bridge
