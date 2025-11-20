@@ -1,0 +1,46 @@
+# AWS Rekognition - Dependências Python
+# =====================================
+#
+# Este arquivo lista todas as dependências necessárias para o projeto
+# de integração com AWS Rekognition.
+#
+# Instalação:
+#   pip install -r requirements.txt
+#
+# Ou com ambiente virtual (recomendado):
+#   python -m venv venv
+#   source venv/bin/activate  # No Windows: venv\Scripts\activate
+#   pip install -r requirements.txt
+
+# SDK AWS para Python - Cliente principal para serviços AWS
+# Versão 1.34+ inclui suporte completo ao Rekognition
+boto3>=1.34.0
+
+# Cliente de baixo nível para AWS (instalado automaticamente com boto3)
+botocore>=1.34.0
+
+# Biblioteca para manipulação de imagens (útil para pré-processamento)
+Pillow>=10.0.0
+
+# Biblioteca para requisições HTTP (caso precise baixar imagens)
+requests>=2.31.0
+
+# Validação de dados e settings
+python-dotenv>=1.0.0
+
+# Logging e debugging
+colorlog>=6.8.0
+
+# Análise e manipulação de dados (opcional, para análise de resultados)
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Visualização de dados (opcional)
+matplotlib>=3.7.0
+
+# Progress bars para processamento em lote
+tqdm>=4.66.0
+
+# Biblioteca para parsing de JSON
+# (json já vem no Python, mas jsonschema é útil para validação)
+jsonschema>=4.20.0
