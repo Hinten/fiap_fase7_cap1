@@ -7,6 +7,7 @@ from src.dashboard.database.importar import importar_db_page
 from src.dashboard.generic.table_view import TableView
 from src.dashboard.modelo_preditivo.exploracao_de_dados import exploracao_de_dados
 from src.dashboard.modelo_preditivo.previsoes import modelo_preditivo_view, previsao_manual_page
+from src.dashboard.notificacoes.email import subscrever_email_page
 from src.dashboard.plots.views import grafico_umidade_view, grafico_estado_do_rele, grafico_ph, grafico_fosforo, \
     grafico_potassio, grafico_tudo
 from src.dashboard.principal import get_principal_page
@@ -91,6 +92,7 @@ def menu():
 
     st.sidebar.page_link(get_principal_page())
     crud_menu()
+    st.sidebar.page_link(subscrever_email_page)
     plot_menu()
     weather_menu()
     modelo_preditivo_menu()

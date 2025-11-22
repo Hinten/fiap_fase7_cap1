@@ -7,6 +7,7 @@ from src.dashboard.global_messages import get_global_messages
 from src.dashboard.irrigacao.views import irrigacao_page
 from src.dashboard.modelo_preditivo.exploracao_de_dados import exploracao_de_dados
 from src.dashboard.modelo_preditivo.previsoes import modelo_preditivo_view, previsao_manual_page
+from src.dashboard.notificacoes.email import subscrever_email_page
 from src.dashboard.plots.views import grafico_umidade_view, grafico_estado_do_rele, grafico_ph, grafico_fosforo, \
     grafico_potassio, grafico_tudo
 from src.dashboard.principal import get_principal_page
@@ -56,6 +57,7 @@ def navigation():
         importar_db_page,
         exploracao_de_dados,
         previsao_manual_page,
+        subscrever_email_page,
     ])
 
     menu()
