@@ -7,6 +7,9 @@ from src.modelo_preditivo.realizar_previsao_func import carregar_modelo_e_realiz
 from src.settings import DEBUG
 from src.notificacoes.email import enviar_email
 
+# Constante para mensagem padrão
+RESULTADO_PLACEHOLDER = "[Será preenchido após a previsão]"
+
 
 def modelo_preditivo_view():
     """
@@ -75,7 +78,7 @@ def modelo_preditivo_view():
                          f"Potássio: {potassio}\n" + \
                          f"pH: {ph}\n" + \
                          f"Umidade: {umidade}\n\n" + \
-                         "Resultado: [Será preenchido após a previsão]"
+                         f"Resultado: {RESULTADO_PLACEHOLDER}"
         
         email_assunto = st.text_input(
             "Assunto do E-mail:",
@@ -105,11 +108,25 @@ def modelo_preditivo_view():
             # Enviar e-mail se a opção estiver habilitada
             if enviar_email_checkbox:
                 try:
+                    # Validação básica dos campos de e-mail
+                    if not email_assunto or not email_assunto.strip():
+                        st.error("❌ O assunto do e-mail não pode estar vazio.")
+                        return
+                    
+                    if not email_mensagem or not email_mensagem.strip():
+                        st.error("❌ A mensagem do e-mail não pode estar vazia.")
+                        return
+                    
+                    # Limitar tamanho do assunto (limite AWS SNS é 100 caracteres)
+                    if len(email_assunto) > 100:
+                        st.error("❌ O assunto do e-mail não pode ter mais de 100 caracteres.")
+                        return
+                    
                     # Gerar mensagem com resultado da previsão
                     mensagem_final = email_mensagem
-                    if "[Será preenchido após a previsão]" in mensagem_final:
+                    if RESULTADO_PLACEHOLDER in mensagem_final:
                         mensagem_final = mensagem_final.replace(
-                            "[Será preenchido após a previsão]",
+                            RESULTADO_PLACEHOLDER,
                             f"Precisa Irrigar?: {previsao}"
                         )
                     else:
@@ -121,6 +138,10 @@ def modelo_preditivo_view():
                         assunto_final = f"{email_assunto} - ✅ Irrigação Necessária"
                     else:
                         assunto_final = f"{email_assunto} - ⛔ Irrigação Não Necessária"
+                    
+                    # Garantir que assunto final não exceda 100 caracteres
+                    if len(assunto_final) > 100:
+                        assunto_final = assunto_final[:97] + "..."
                     
                     resposta = enviar_email(assunto_final, mensagem_final)
                     st.success(f"✅ E-mail enviado com sucesso! ID da Mensagem: {resposta['MessageId']}")
