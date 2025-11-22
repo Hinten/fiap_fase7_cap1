@@ -83,6 +83,15 @@ def modelo_preditivo_menu():
     st.sidebar.page_link(exploracao_de_dados)
     st.sidebar.page_link(previsao_manual_page)
 
+def notificacoes_menu():
+    """
+    Função para exibir o menu lateral do aplicativo.
+    Cria as páginas de exportação e importação do banco de dados.
+    """
+
+    st.sidebar.header("Notificações")
+    st.sidebar.page_link(subscrever_email_page)
+
 def menu():
     """
     Função para exibir o menu lateral do aplicativo.
@@ -92,7 +101,7 @@ def menu():
 
     st.sidebar.page_link(get_principal_page())
     crud_menu()
-    st.sidebar.page_link(subscrever_email_page)
+    notificacoes_menu()
     plot_menu()
     weather_menu()
     modelo_preditivo_menu()
