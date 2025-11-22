@@ -692,8 +692,6 @@ O projeto utiliza um arquivo especial denominado **`.env`** para armazenar vari�
 | SQL_LITE      | Define o banco de dados a ser usado (`true` ou `false`)                                                  | `true` ou `false`                 |
 | LOGGING_ENABLED      | Define se o logger da aplicação será ativado (`true` ou `false`)                                         | `true` ou `false`                 |
 | ENABLE_API      | Define se a API que salva os dados do sensor será ativada juntamente com o dashboard (`true` ou `false`) | `true` ou `false`                 |
-| SNS_REGION      | Região AWS onde o tópico SNS está configurado (necessário para alertas automáticos)                      | `us-east-1`, `sa-east-1`          |
-| SNS_TOPIC_ARN      | ARN do tópico SNS para envio de alertas automáticos de sensores                                           | `arn:aws:sns:us-east-1:123456789012:sensor-alerts` |
 
 
 ### ⚙️ Exemplo de arquivo `.env`
@@ -702,10 +700,6 @@ O projeto utiliza um arquivo especial denominado **`.env`** para armazenar vari�
 SQL_LITE=true
 LOGGING_ENABLED=true
 ENABLE_API=true
-
-# Configurações AWS SNS (necessário para alertas automáticos)
-SNS_REGION=us-east-1
-SNS_TOPIC_ARN=arn:aws:sns:us-east-1:123456789012:sensor-alerts
 ```
 
 - Se `SQL_LITE=true`, o sistema usará o banco SQLite local.
@@ -906,6 +900,79 @@ O dashboard também permite que o usuário faça previsões manuais de irrigaç�
 <p align="center">
   <img src="assets/dashboard/modelo_preditivo/previsao_manual.JPG" alt="previsao_manual" border="0" width=80% height=80%>
 </p>
+
+### Notificação por E-mail de Resultados de Previsão
+
+O sistema de previsão manual oferece funcionalidade integrada de notificação por e-mail, permitindo que os usuários recebam alertas automáticos sobre os resultados das previsões de irrigação.
+
+#### Funcionalidades da Notificação
+
+- **Envio Opcional**: O usuário pode optar por enviar ou não o e-mail através de um checkbox
+- **Personalização Completa**: Assunto e mensagem do e-mail são totalmente editáveis
+- **Notificação para Todos os Resultados**: E-mails são enviados tanto para resultados "Sim" (irrigação necessária) quanto "Não" (irrigação não necessária)
+- **Indicadores Visuais**: O assunto do e-mail inclui indicadores visuais automáticos:
+  - ✅ Irrigação Necessária (quando a previsão é "Sim")
+  - ⛔ Irrigação Não Necessária (quando a previsão é "Não")
+
+#### Como Utilizar
+
+1. **Preencher os Parâmetros de Previsão**: Insira os valores de umidade, pH, potássio e fósforo
+2. **Habilitar Notificação**: Marque a opção "Enviar notificação por e-mail após a previsão"
+3. **Personalizar (Opcional)**: Edite o assunto e mensagem do e-mail conforme necessário
+4. **Realizar Previsão**: Clique no botão "Realizar Previsão"
+5. **Confirmação**: O sistema exibirá o resultado da previsão e confirmará o envio do e-mail
+
+#### Configuração Necessária
+
+Para utilizar a funcionalidade de notificação por e-mail, é necessário configurar as seguintes variáveis de ambiente no arquivo `.env`:
+
+| Variável       | Descrição                                           | Exemplo de Valor                          |
+|----------------|-----------------------------------------------------|-------------------------------------------|
+| SNS_TOPIC_ARN  | ARN do tópico SNS da AWS para envio de e-mails      | `arn:aws:sns:us-east-1:123456789012:topic` |
+| SNS_REGION     | Região da AWS onde o tópico SNS está configurado    | `us-east-1`                               |
+
+#### Validações Implementadas
+
+O sistema implementa as seguintes validações para garantir o envio correto dos e-mails:
+
+- **Campos Obrigatórios**: Verifica se assunto e mensagem não estão vazios
+- **Limite de Caracteres**: Valida que o assunto não excede 100 caracteres (limite do AWS SNS), considerando os sufixos automáticos
+- **Variáveis de Ambiente**: Exibe aviso se as credenciais AWS SNS não estiverem configuradas
+- **Feedback Visual**: Mensagens claras de sucesso ou erro são exibidas ao usuário
+
+#### Conteúdo Padrão do E-mail
+
+Quando habilitada, a notificação inclui automaticamente:
+
+- **Assunto Padrão**: "Resultado da Previsão de Irrigação" + indicador visual do resultado
+- **Mensagem Padrão**: Inclui todos os parâmetros utilizados na previsão (data/hora, fósforo, potássio, pH, umidade) e o resultado da análise
+
+#### Exemplo de E-mail Enviado
+
+**Assunto**: Resultado da Previsão de Irrigação - ✅ Irrigação Necessária
+
+**Mensagem**:
+```
+A previsão de irrigação foi realizada com os seguintes parâmetros:
+
+Data/Hora: 2025-05-20 14:30:00
+Fósforo: 1
+Potássio: 1
+pH: 1
+Umidade: 45.5
+
+Precisa Irrigar?: Sim
+```
+
+#### Integração com AWS SNS
+
+O sistema utiliza o serviço Amazon Simple Notification Service (SNS) para o envio de e-mails, garantindo:
+
+- **Confiabilidade**: Alta disponibilidade e entrega garantida
+- **Escalabilidade**: Suporte para múltiplos destinatários através de tópicos SNS
+- **Rastreabilidade**: Cada e-mail enviado retorna um ID único de mensagem
+
+Para mais detalhes sobre a implementação, consulte o arquivo [previsoes.py](src/dashboard/modelo_preditivo/previsoes.py).
 
 ## Previsão automática e integração com o ESP32
 
