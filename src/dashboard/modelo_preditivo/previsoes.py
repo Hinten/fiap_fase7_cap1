@@ -11,6 +11,7 @@ from src.notificacoes.email import enviar_email
 RESULTADO_PLACEHOLDER = "[Será preenchido após a previsão]"
 SUFIXO_IRRIGACAO_NECESSARIA = " - ✅ Irrigação Necessária"
 SUFIXO_IRRIGACAO_NAO_NECESSARIA = " - ⛔ Irrigação Não Necessária"
+AWS_SNS_SUBJECT_LIMIT = 100
 
 
 def modelo_preditivo_view():
@@ -111,44 +112,48 @@ def modelo_preditivo_view():
             if enviar_email_checkbox:
                 try:
                     # Validação básica dos campos de e-mail
-                    if not email_assunto or not email_assunto.strip():
-                        st.error("❌ O assunto do e-mail não pode estar vazio.")
-                        return
+                    email_valido = True
                     
-                    if not email_mensagem or not email_mensagem.strip():
-                        st.error("❌ A mensagem do e-mail não pode estar vazia.")
-                        return
+                    if not email_assunto or not email_assunto.strip():
+                        st.error("❌ O assunto do e-mail não pode estar vazio. E-mail não enviado.")
+                        email_valido = False
+                    
+                    if email_valido and (not email_mensagem or not email_mensagem.strip()):
+                        st.error("❌ A mensagem do e-mail não pode estar vazia. E-mail não enviado.")
+                        email_valido = False
                     
                     # Calcular tamanho máximo do assunto base (considerando o sufixo mais longo)
                     sufixo_max = max(SUFIXO_IRRIGACAO_NECESSARIA, SUFIXO_IRRIGACAO_NAO_NECESSARIA, key=len)
-                    tamanho_maximo_base = 100 - len(sufixo_max)
+                    tamanho_maximo_base = AWS_SNS_SUBJECT_LIMIT - len(sufixo_max)
                     
-                    if len(email_assunto) > tamanho_maximo_base:
-                        st.error(f"❌ O assunto do e-mail é muito longo. Máximo permitido: {tamanho_maximo_base} caracteres (você tem {len(email_assunto)}).")
-                        return
+                    if email_valido and len(email_assunto) > tamanho_maximo_base:
+                        st.error(f"❌ O assunto do e-mail é muito longo. Máximo permitido: {tamanho_maximo_base} caracteres (você tem {len(email_assunto)}). E-mail não enviado.")
+                        email_valido = False
                     
-                    # Gerar mensagem com resultado da previsão
-                    mensagem_final = email_mensagem
-                    if RESULTADO_PLACEHOLDER in mensagem_final:
-                        mensagem_final = mensagem_final.replace(
-                            RESULTADO_PLACEHOLDER,
-                            f"Precisa Irrigar?: {previsao}"
-                        )
-                    else:
-                        mensagem_final += f"\n\n=== RESULTADO DA PREVISÃO ===\nPrecisa Irrigar?: {previsao}"
-                    
-                    # Atualizar assunto com resultado
-                    if previsao == "Sim":
-                        assunto_final = f"{email_assunto}{SUFIXO_IRRIGACAO_NECESSARIA}"
-                    else:
-                        assunto_final = f"{email_assunto}{SUFIXO_IRRIGACAO_NAO_NECESSARIA}"
-                    
-                    # Garantir que assunto final não exceda 100 caracteres (segurança adicional)
-                    if len(assunto_final) > 100:
-                        assunto_final = assunto_final[:97] + "..."
-                    
-                    resposta = enviar_email(assunto_final, mensagem_final)
-                    st.success(f"✅ E-mail enviado com sucesso! ID da Mensagem: {resposta['MessageId']}")
+                    # Enviar e-mail apenas se todas as validações passaram
+                    if email_valido:
+                        # Gerar mensagem com resultado da previsão
+                        mensagem_final = email_mensagem
+                        if RESULTADO_PLACEHOLDER in mensagem_final:
+                            mensagem_final = mensagem_final.replace(
+                                RESULTADO_PLACEHOLDER,
+                                f"Precisa Irrigar?: {previsao}"
+                            )
+                        else:
+                            mensagem_final += f"\n\n=== RESULTADO DA PREVISÃO ===\nPrecisa Irrigar?: {previsao}"
+                        
+                        # Atualizar assunto com resultado
+                        if previsao == "Sim":
+                            assunto_final = f"{email_assunto}{SUFIXO_IRRIGACAO_NECESSARIA}"
+                        else:
+                            assunto_final = f"{email_assunto}{SUFIXO_IRRIGACAO_NAO_NECESSARIA}"
+                        
+                        # Garantir que assunto final não exceda o limite (segurança adicional)
+                        if len(assunto_final) > AWS_SNS_SUBJECT_LIMIT:
+                            assunto_final = assunto_final[:AWS_SNS_SUBJECT_LIMIT - 3] + "..."
+                        
+                        resposta = enviar_email(assunto_final, mensagem_final)
+                        st.success(f"✅ E-mail enviado com sucesso! ID da Mensagem: {resposta['MessageId']}")
                     
                 except Exception as email_error:
                     st.error(f"❌ Erro ao enviar e-mail: {str(email_error)}")
