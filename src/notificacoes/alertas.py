@@ -11,12 +11,18 @@ Funcionalidades:
 - Armazenamento in-memory do controle de throttling
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List
 from src.notificacoes.email import enviar_email
 
 # Dicionário in-memory para controlar throttling de alertas
 # Chave: sensor_id, Valor: datetime do último alerta enviado
+# 
+# LIMITAÇÃO: O armazenamento in-memory é perdido ao reiniciar a aplicação.
+# Para ambientes de produção, considere usar:
+# - Redis para cache distribuído
+# - Tabela ALERTAS no banco de dados para persistência
+# - Amazon ElastiCache para escalabilidade
 ULTIMO_ALERTA: Dict[int, datetime] = {}
 
 # Intervalo mínimo entre alertas (em minutos)
@@ -95,7 +101,7 @@ def publicar_alerta_sensor(sensor_id: int, umidade: float = None, ph: float = No
         return False
     
     # Verifica throttling
-    agora = datetime.utcnow()
+    agora = datetime.now(timezone.utc)
     ultimo = ULTIMO_ALERTA.get(sensor_id)
     
     if ultimo and (agora - ultimo) < timedelta(minutes=INTERVALO_MIN):
@@ -124,8 +130,8 @@ Condições críticas identificadas:
     # Adiciona valores atuais
     mensagem += f"""
 Valores atuais:
-  - Umidade: {umidade:.1f}% {' ⚠️' if umidade is not None and umidade < 60 else ''}
-  - pH: {ph:.2f} {' ⚠️' if ph is not None and (ph < 6.0 or ph > 7.0) else ''}
+  - Umidade: {f'{umidade:.1f}%' if umidade is not None else 'N/A'} {' ⚠️' if umidade is not None and umidade < 60 else ''}
+  - pH: {f'{ph:.2f}' if ph is not None else 'N/A'} {' ⚠️' if ph is not None and (ph < 6.0 or ph > 7.0) else ''}
   - Fósforo: {'OK ✓' if fosforo_ok else 'CRÍTICO ⚠️'}
   - Potássio: {'OK ✓' if potassio_ok else 'CRÍTICO ⚠️'}
   - Irrigação: {'ATIVA ⚠️' if irrigacao_ativa else 'INATIVA'}
@@ -179,7 +185,7 @@ def obter_status_throttling(sensor_id: int) -> Dict:
         - tempo_restante: segundos restantes até poder enviar (ou 0)
     """
     ultimo = ULTIMO_ALERTA.get(sensor_id)
-    agora = datetime.utcnow()
+    agora = datetime.now(timezone.utc)
     
     if not ultimo:
         return {

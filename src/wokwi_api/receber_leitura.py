@@ -79,10 +79,10 @@ def receber_leitura(request: LeituraRequest):
             sensor_id = sensores[0].id
             
             # Converte estado_fosforo e estado_potassio para boolean
-            # (0 = crítico/False, 1 = OK/True)
-            fosforo_ok = bool(request.estado_fosforo) if request.estado_fosforo is not None else True
-            potassio_ok = bool(request.estado_potassio) if request.estado_potassio is not None else True
-            irrigacao_ativa = bool(request.estado_irrigacao) if request.estado_irrigacao is not None else False
+            # Valores do ESP32: 1 = OK/True, 0 = Crítico/False
+            fosforo_ok = (request.estado_fosforo == 1) if request.estado_fosforo is not None else True
+            potassio_ok = (request.estado_potassio == 1) if request.estado_potassio is not None else True
+            irrigacao_ativa = (request.estado_irrigacao == 1) if request.estado_irrigacao is not None else False
             
             # Envia alerta se houver condições críticas
             publicar_alerta_sensor(
