@@ -4,6 +4,7 @@ from datetime import datetime
 from fastapi import APIRouter
 
 from src.wokwi_api.base.leitura_request import LeituraRequest
+from src.notificacoes.alertas import publicar_alerta_sensor
 
 receber_router = APIRouter()
 
@@ -70,6 +71,31 @@ def receber_leitura(request: LeituraRequest):
 
         session.commit()
 
+    # Após salvar todas as leituras, avalia condições e envia alertas se necessário
+    try:
+        # Busca o sensor_id do primeiro sensor encontrado para usar no alerta
+        # (todos os sensores têm o mesmo serial, então usamos o primeiro)
+        if sensores:
+            sensor_id = sensores[0].id
+            
+            # Converte estado_fosforo e estado_potassio para boolean
+            # (0 = crítico/False, 1 = OK/True)
+            fosforo_ok = bool(request.estado_fosforo) if request.estado_fosforo is not None else True
+            potassio_ok = bool(request.estado_potassio) if request.estado_potassio is not None else True
+            irrigacao_ativa = bool(request.estado_irrigacao) if request.estado_irrigacao is not None else False
+            
+            # Envia alerta se houver condições críticas
+            publicar_alerta_sensor(
+                sensor_id=sensor_id,
+                umidade=request.umidade,
+                ph=request.ph,
+                fosforo_ok=fosforo_ok,
+                potassio_ok=potassio_ok,
+                irrigacao_ativa=irrigacao_ativa
+            )
+    except Exception as e:
+        # Não falha a requisição se houver erro no envio de alerta
+        print(f"[AVISO] Erro ao avaliar/enviar alerta: {str(e)}")
 
     return {
         "status": "success",

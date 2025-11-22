@@ -692,6 +692,8 @@ O projeto utiliza um arquivo especial denominado **`.env`** para armazenar vari�
 | SQL_LITE      | Define o banco de dados a ser usado (`true` ou `false`)                                                  | `true` ou `false`                 |
 | LOGGING_ENABLED      | Define se o logger da aplicação será ativado (`true` ou `false`)                                         | `true` ou `false`                 |
 | ENABLE_API      | Define se a API que salva os dados do sensor será ativada juntamente com o dashboard (`true` ou `false`) | `true` ou `false`                 |
+| SNS_REGION      | Região AWS onde o tópico SNS está configurado (necessário para alertas automáticos)                      | `us-east-1`, `sa-east-1`          |
+| SNS_TOPIC_ARN      | ARN do tópico SNS para envio de alertas automáticos de sensores                                           | `arn:aws:sns:us-east-1:123456789012:sensor-alerts` |
 
 
 ### ⚙️ Exemplo de arquivo `.env`
@@ -700,6 +702,10 @@ O projeto utiliza um arquivo especial denominado **`.env`** para armazenar vari�
 SQL_LITE=true
 LOGGING_ENABLED=true
 ENABLE_API=true
+
+# Configurações AWS SNS (necessário para alertas automáticos)
+SNS_REGION=us-east-1
+SNS_TOPIC_ARN=arn:aws:sns:us-east-1:123456789012:sensor-alerts
 ```
 
 - Se `SQL_LITE=true`, o sistema usará o banco SQLite local.
@@ -976,6 +982,348 @@ Para acessar a api o usuário deverá selecionar as opções "Previsão do Tempo
   404: Cidade não encontrada
   429: Limite excedido
 
+---
+
+# Mensageria AWS SNS - Sistema de Alertas Automáticos
+
+O sistema FarmTech Solutions implementa um serviço de mensageria automática utilizando **Amazon SNS (Simple Notification Service)** para enviar alertas em tempo real quando leituras críticas dos sensores são detectadas. Esta funcionalidade garante que os gestores agrícolas sejam notificados imediatamente sobre condições que requerem atenção.
+
+## 📋 Visão Geral
+
+O sistema de alertas monitora continuamente as leituras dos sensores e dispara notificações por e-mail quando condições críticas são identificadas. As notificações são enviadas através do AWS SNS, um serviço de mensageria gerenciado, escalável e confiável.
+
+### Principais Características
+
+- ✅ **Alertas Automáticos**: Disparo automático baseado em regras de negócio
+- ✅ **Consolidação**: Múltiplas condições críticas em um único alerta
+- ✅ **Throttling Inteligente**: Intervalo mínimo de 15 minutos entre alertas do mesmo sensor
+- ✅ **Integração Boto3**: Uso da biblioteca oficial AWS para Python
+- ✅ **Zero Configuração no Código**: Configuração via variáveis de ambiente
+
+## 🔧 Configuração AWS SNS
+
+### Pré-requisitos
+
+- Conta AWS ativa
+- AWS CLI configurado (opcional, mas recomendado)
+- Credenciais AWS com permissões para SNS
+
+### Passo 1: Criar um Tópico SNS
+
+1. Acesse o console AWS e navegue até o serviço **SNS**
+2. No menu lateral, clique em **Topics** (Tópicos)
+3. Clique no botão **Create topic** (Criar tópico)
+4. Selecione o tipo **Standard**
+5. Defina um nome para o tópico, por exemplo: `sensor-alerts-farmtech`
+6. Mantenha as configurações padrão e clique em **Create topic**
+
+**[PRINT 1 - Criação do Tópico]**
+_Placeholder: Captura de tela mostrando a página de criação do tópico SNS com o nome "sensor-alerts-farmtech" configurado_
+
+### Passo 2: Copiar o ARN do Tópico
+
+1. Após criar o tópico, você será redirecionado para a página de detalhes
+2. Localize o campo **ARN** (Amazon Resource Name)
+3. Copie o valor do ARN, que terá um formato similar a:
+   ```
+   arn:aws:sns:us-east-1:123456789012:sensor-alerts-farmtech
+   ```
+4. Guarde este valor, pois será usado na configuração das variáveis de ambiente
+
+**[PRINT 2 - ARN do Tópico]**
+_Placeholder: Captura de tela destacando o campo ARN na página de detalhes do tópico_
+
+### Passo 3: Criar uma Subscription (Inscrição)
+
+1. Na página de detalhes do tópico, clique na aba **Subscriptions**
+2. Clique no botão **Create subscription**
+3. Configure a subscription:
+   - **Protocol**: Selecione `Email`
+   - **Endpoint**: Insira o endereço de e-mail que receberá os alertas
+4. Clique em **Create subscription**
+
+**[PRINT 3 - Subscription Pendente]**
+_Placeholder: Captura de tela mostrando a subscription criada com status "Pending confirmation"_
+
+### Passo 4: Confirmar a Subscription
+
+1. Acesse a caixa de entrada do e-mail cadastrado
+2. Procure por um e-mail da AWS SNS com assunto "AWS Notification - Subscription Confirmation"
+3. Abra o e-mail e clique no link **Confirm subscription**
+4. Uma página web será aberta confirmando a inscrição
+
+**[PRINT 4 - Confirmação de Subscription]**
+_Placeholder: Captura de tela do e-mail de confirmação da AWS e/ou a página de confirmação bem-sucedida_
+
+### Passo 5: Configurar Variáveis de Ambiente
+
+Edite o arquivo `.env` na raiz do projeto e adicione as seguintes variáveis:
+
+```bash
+# Configurações AWS SNS
+SNS_REGION=us-east-1
+SNS_TOPIC_ARN=arn:aws:sns:us-east-1:123456789012:sensor-alerts-farmtech
+```
+
+**Importante:** Substitua os valores acima pelos valores reais da sua configuração AWS.
+
+Um arquivo `.env.example` está disponível no projeto como referência.
+
+## 📊 Critérios de Alerta
+
+O sistema avalia as seguintes condições para determinar se um alerta deve ser enviado:
+
+| Sensor/Condição | Critério de Alerta | Descrição |
+|-----------------|-------------------|-----------|
+| **Umidade** | `< 60%` | Umidade do solo abaixo do nível crítico |
+| **pH** | `< 6.0` ou `> 7.0` | pH fora da faixa ideal para cultivo |
+| **Fósforo** | `valor = 0` (False) | Nível crítico de fósforo no solo |
+| **Potássio** | `valor = 0` (False) | Nível crítico de potássio no solo |
+| **Irrigação** | `valor = 1` (True) | Sistema de irrigação foi ativado |
+
+### Exemplo de Avaliação
+
+Considere uma leitura com os seguintes valores:
+- Umidade: 55% ⚠️
+- pH: 5.5 ⚠️
+- Fósforo: 0 (Crítico) ⚠️
+- Potássio: 1 (OK) ✓
+- Irrigação: 1 (Ativa) ⚠️
+
+Neste cenário, **4 condições críticas** foram detectadas, e um **único alerta consolidado** será enviado.
+
+## 📧 Formato das Notificações
+
+### Assunto do E-mail
+
+```
+[ALERTA SENSOR 123] Condições Críticas Detectadas
+```
+
+### Corpo do E-mail
+
+```
+ALERTA AUTOMÁTICO - SENSOR 123
+
+⚠️ CONDIÇÕES CRÍTICAS DETECTADAS ⚠️
+
+Timestamp: 2025-11-22T19:30:00Z
+
+Condições críticas identificadas:
+  1. Umidade baixa (55.0%) < 60%
+  2. pH fora da faixa (5.50) - Ideal: 6.0–7.0
+  3. Fósforo crítico
+  4. Irrigação ativada
+
+Valores atuais:
+  - Umidade: 55.0% ⚠️
+  - pH: 5.50 ⚠️
+  - Fósforo: CRÍTICO ⚠️
+  - Potássio: OK ✓
+  - Irrigação: ATIVA ⚠️
+
+---
+Este é um alerta automático gerado pelo sistema de monitoramento de sensores.
+Próximo alerta poderá ser enviado após 15 minutos.
+```
+
+**[PRINT 5 - Exemplo de E-mail Recebido]**
+_Placeholder: Captura de tela de um e-mail real recebido com alerta de sensor, mostrando o assunto e corpo completo_
+
+## 🔄 Funcionamento do Sistema
+
+### Fluxo de Alertas
+
+1. **Recepção de Leitura**: O ESP32 envia dados dos sensores para a API (`/leitura/`)
+2. **Persistência**: Os dados são salvos no banco de dados
+3. **Avaliação**: O módulo `alertas.py` avalia as condições críticas
+4. **Consolidação**: Múltiplas condições são agrupadas em um único alerta
+5. **Throttling**: Verifica se já foi enviado alerta recente (< 15 minutos)
+6. **Envio**: Se aprovado, publica no tópico SNS via `enviar_email()`
+7. **Notificação**: Subscribers recebem o e-mail automaticamente
+
+### Diagrama de Fluxo
+
+```
+ESP32 → API /leitura/ → Banco de Dados → avaliar_condicoes()
+                                              ↓
+                                    Condições Críticas?
+                                              ↓
+                                         Sim ↓ Não → FIM
+                                              ↓
+                                    Throttling OK?
+                                              ↓
+                                         Sim ↓ Não → FIM
+                                              ↓
+                                    publicar_alerta_sensor()
+                                              ↓
+                                        AWS SNS Topic
+                                              ↓
+                                      E-mail Subscriber
+```
+
+## 🎛️ Throttling e Consolidação
+
+### Throttling (15 minutos)
+
+Para evitar spam de notificações, o sistema implementa um mecanismo de **throttling**:
+
+- **Intervalo Mínimo**: 15 minutos entre alertas do mesmo sensor
+- **Armazenamento**: In-memory (dicionário Python)
+- **Chave**: `sensor_id`
+- **Valor**: Timestamp do último alerta enviado
+
+**Comportamento:**
+- Se um alerta foi enviado há menos de 15 minutos, novos alertas são **bloqueados**
+- Após 15 minutos, o sensor pode enviar um novo alerta
+- Cada sensor tem seu próprio timer independente
+
+**Limitação:** O controle in-memory é perdido ao reiniciar a aplicação. Para ambientes de produção, considere usar Redis ou cache persistente.
+
+### Consolidação de Múltiplas Condições
+
+Quando várias condições críticas ocorrem simultaneamente, o sistema:
+
+1. **Coleta** todas as condições críticas detectadas
+2. **Agrupa** em uma única mensagem
+3. **Enumera** cada condição de forma clara
+4. **Envia** apenas uma notificação
+
+**Benefício:** Reduz ruído e facilita a leitura pelo gestor, que recebe um panorama completo da situação em um único e-mail.
+
+## 📁 Estrutura de Código
+
+### Módulos Principais
+
+#### `src/notificacoes/email.py`
+Funções base para integração com AWS SNS usando boto3:
+- `enviar_email(assunto, mensagem)`: Publica mensagem no tópico SNS
+- `subscribe_email(email)`: Adiciona novo subscriber ao tópico
+
+#### `src/notificacoes/alertas.py` (NOVO)
+Lógica de avaliação e disparo de alertas:
+- `avaliar_condicoes()`: Avalia leituras e retorna lista de condições críticas
+- `publicar_alerta_sensor()`: Consolida condições e envia alerta via SNS
+- `obter_status_throttling()`: Retorna status de throttling de um sensor
+- `limpar_historico_alertas()`: Limpa histórico (útil para testes)
+
+#### `src/wokwi_api/receber_leitura.py` (MODIFICADO)
+API que recebe leituras do ESP32 e dispara avaliação de alertas:
+- Após salvar leituras no banco, chama `publicar_alerta_sensor()`
+- Erros no envio de alertas não interrompem o fluxo principal
+
+### Exemplo de Uso Programático
+
+```python
+from src.notificacoes.alertas import publicar_alerta_sensor
+
+# Simular leitura crítica
+alerta_enviado = publicar_alerta_sensor(
+    sensor_id=1,
+    umidade=55.0,
+    ph=5.5,
+    fosforo_ok=False,
+    potassio_ok=True,
+    irrigacao_ativa=True
+)
+
+if alerta_enviado:
+    print("Alerta enviado com sucesso!")
+else:
+    print("Alerta não enviado (sem condições críticas ou throttling ativo)")
+```
+
+## 🧪 Testando o Sistema
+
+### Teste via Dashboard
+
+1. Acesse o dashboard Streamlit
+2. Navegue até **Notificações** → **Subscrever E-mail**
+3. Insira seu e-mail e clique em **Subscrever E-mail**
+4. Confirme a subscription no e-mail recebido
+5. Clique em **Enviar E-mail de Teste** para verificar o funcionamento
+
+### Teste via API (Simulação de ESP32)
+
+Use o seguinte payload para simular uma leitura crítica:
+
+```bash
+curl -X POST "http://localhost:8180/leitura/" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "serial": "ABC123",
+    "umidade": 55.0,
+    "ph": 5.5,
+    "estado_fosforo": 0,
+    "estado_potassio": 1,
+    "estado_irrigacao": 1
+  }'
+```
+
+**Resultado esperado:** Um alerta consolidado deve ser enviado para os subscribers do tópico SNS.
+
+## 🔮 Sugestões de Evolução Futura
+
+### Integrações Avançadas
+
+1. **Amazon SQS (Simple Queue Service)**
+   - Enfileirar alertas para processamento assíncrono
+   - Garantir entrega mesmo em caso de falhas temporárias
+   - Separar lógica de avaliação e envio
+
+2. **Amazon EventBridge**
+   - Criar regras baseadas em eventos
+   - Integrar com múltiplos destinos (Lambda, SNS, SQS)
+   - Facilitar arquitetura orientada a eventos
+
+3. **Amazon CloudWatch**
+   - Monitorar métricas de alertas (quantidade, frequência)
+   - Criar dashboards de observabilidade
+   - Configurar alarmes sobre o próprio sistema de alertas
+
+### Melhorias no Sistema
+
+- **Persistência de Histórico**: Tabela `ALERTAS` no banco de dados
+- **Níveis de Severidade**: Alertas críticos, warnings, informativos
+- **Múltiplos Canais**: SMS, WhatsApp, Telegram via SNS
+- **Machine Learning**: Previsão de condições críticas antes que ocorram
+- **Configuração Dinâmica**: Interface para ajustar critérios de alerta
+
+## 🔒 Considerações de Segurança
+
+- **Credenciais AWS**: Nunca commitar credenciais no repositório
+- **Variáveis de Ambiente**: Usar `.env` e adicionar ao `.gitignore`
+- **IAM Policies**: Conceder apenas permissões mínimas necessárias (SNS:Publish)
+- **Criptografia**: SNS usa TLS para dados em trânsito
+- **Auditoria**: CloudTrail pode registrar todas as chamadas SNS
+
+## 📞 Suporte e Troubleshooting
+
+### Problema: Alertas não estão sendo enviados
+
+**Verificações:**
+1. Variáveis `SNS_REGION` e `SNS_TOPIC_ARN` estão configuradas no `.env`
+2. Credenciais AWS estão configuradas (`aws configure` ou variáveis de ambiente)
+3. Tópico SNS existe e está ativo
+4. Há pelo menos uma subscription confirmada
+5. Condições críticas foram realmente detectadas
+
+### Problema: Recebo muitos alertas
+
+**Soluções:**
+- Ajustar critérios de alerta (modificar thresholds em `alertas.py`)
+- Aumentar intervalo de throttling (modificar `INTERVALO_MIN`)
+- Revisar lógica de consolidação
+
+### Problema: Subscription não confirma
+
+**Soluções:**
+- Verificar pasta de spam/lixo eletrônico
+- Usar e-mail pessoal (alguns corporativos bloqueiam)
+- Tentar reenviar confirmação pelo console AWS
+
+---
+
 ## 📁 Estrutura de pastas
 
 Dentre os arquivos e pastas presentes na raiz do projeto, definem-se:
@@ -987,6 +1335,7 @@ Dentre os arquivos e pastas presentes na raiz do projeto, definem-se:
   - <b>database</b>: Execução dos comandos de banco de dados, como Conectar, Cadastrar, Listar, Editar e Excluir.
   - <b>logger</b>: Código responsável por registrar as operações realizadas no banco de dados, como inserções, atualizações e exclusões.
   - <b>modelo_preditivo</b>: Código responsável por treinar o modelo preditivo utilizado para prever a necessidade de irrigação, utilizando a biblioteca Scikit-learn.
+  - <b>notificacoes</b>: Sistema de mensageria e alertas automáticos usando AWS SNS (Simple Notification Service) para notificar condições críticas dos sensores. Inclui módulos para envio de e-mails e avaliação de alertas com throttling e consolidação.
   - <b>plots</b>: Pasta que contém os arquivos de plotagem dos gráficos utilizados no dashboard, como gráficos de barras, linhas e dispersão.
   - <b>service</b>: Conexão com a api pública de previsão do tempo, responsável por coletar dados meteorológicos.
   - <b>wokwi</b>: Código do ESP32, responsável por monitorar a necessidade de irrigação em uma plantação, simulando sensores de nutrientes e condições ambientais.
