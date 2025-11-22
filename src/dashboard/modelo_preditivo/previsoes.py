@@ -107,6 +107,11 @@ def modelo_preditivo_view():
             
             # Enviar e-mail se a opção estiver habilitada
             if enviar_email_checkbox:
+                # Verificar se as variáveis de e-mail foram definidas
+                if 'email_assunto' not in locals() or 'email_mensagem' not in locals():
+                    st.error("❌ Erro: Campos de e-mail não foram preenchidos. Marque a opção de notificação antes de clicar em 'Realizar Previsão'.")
+                    return
+                    
                 try:
                     # Validação básica dos campos de e-mail
                     if not email_assunto or not email_assunto.strip():
@@ -117,9 +122,14 @@ def modelo_preditivo_view():
                         st.error("❌ A mensagem do e-mail não pode estar vazia.")
                         return
                     
-                    # Limitar tamanho do assunto (limite AWS SNS é 100 caracteres)
-                    if len(email_assunto) > 100:
-                        st.error("❌ O assunto do e-mail não pode ter mais de 100 caracteres.")
+                    # Calcular tamanho do assunto com sufixo que será adicionado
+                    sufixo_max = " - ⛔ Irrigação Não Necessária"  # O mais longo dos dois sufixos
+                    tamanho_total_estimado = len(email_assunto) + len(sufixo_max)
+                    
+                    # Limitar tamanho do assunto base para garantir que o final não exceda 100 caracteres
+                    tamanho_maximo_base = 100 - len(sufixo_max)
+                    if len(email_assunto) > tamanho_maximo_base:
+                        st.error(f"❌ O assunto do e-mail é muito longo. Máximo permitido: {tamanho_maximo_base} caracteres (você tem {len(email_assunto)}).")
                         return
                     
                     # Gerar mensagem com resultado da previsão
@@ -139,7 +149,7 @@ def modelo_preditivo_view():
                     else:
                         assunto_final = f"{email_assunto} - ⛔ Irrigação Não Necessária"
                     
-                    # Garantir que assunto final não exceda 100 caracteres
+                    # Garantir que assunto final não exceda 100 caracteres (segurança adicional)
                     if len(assunto_final) > 100:
                         assunto_final = assunto_final[:97] + "..."
                     
