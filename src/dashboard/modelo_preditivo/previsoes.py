@@ -5,6 +5,13 @@ import os
 
 from src.modelo_preditivo.realizar_previsao_func import carregar_modelo_e_realizar_previsao
 from src.settings import DEBUG
+from src.notificacoes.email import enviar_email
+
+# Constantes
+RESULTADO_PLACEHOLDER = "[Será preenchido após a previsão]"
+SUFIXO_IRRIGACAO_NECESSARIA = " - ✅ Irrigação Necessária"
+SUFIXO_IRRIGACAO_NAO_NECESSARIA = " - ⛔ Irrigação Não Necessária"
+AWS_SNS_SUBJECT_LIMIT = 100
 
 
 def modelo_preditivo_view():
@@ -48,6 +55,47 @@ def modelo_preditivo_view():
     # Combina data e hora em um datetime
     hora_leitura_dt = datetime.datetime.combine(data_leitura, hora_leitura)
 
+    # Seção de Notificação por E-mail
+    st.divider()
+    st.subheader("📧 Notificação por E-mail")
+    
+    enviar_email_checkbox = st.checkbox(
+        "Enviar notificação por e-mail após a previsão",
+        value=False,
+        help="Marque esta opção para receber um e-mail com o resultado da previsão"
+    )
+    
+    if enviar_email_checkbox:
+        # Validar variáveis de ambiente necessárias
+        sns_topic_arn = os.environ.get('SNS_TOPIC_ARN')
+        sns_region = os.environ.get('SNS_REGION')
+        
+        if not sns_topic_arn or not sns_region:
+            st.warning("⚠️ As variáveis de ambiente SNS_TOPIC_ARN e SNS_REGION devem estar configuradas para enviar e-mails.")
+        
+        # Campos de entrada para assunto e mensagem
+        assunto_padrao = "Resultado da Previsão de Irrigação"
+        mensagem_padrao = "A previsão de irrigação foi realizada com os seguintes parâmetros:\n\n" + \
+                         f"Data/Hora: {data_leitura} {hora_leitura}\n" + \
+                         f"Fósforo: {fosforo}\n" + \
+                         f"Potássio: {potassio}\n" + \
+                         f"pH: {ph}\n" + \
+                         f"Umidade: {umidade}\n\n" + \
+                         f"Resultado: {RESULTADO_PLACEHOLDER}"
+        
+        email_assunto = st.text_input(
+            "Assunto do E-mail:",
+            value=assunto_padrao,
+            help="Personalize o assunto do e-mail de notificação"
+        )
+        
+        email_mensagem = st.text_area(
+            "Mensagem do E-mail:",
+            value=mensagem_padrao,
+            height=200,
+            help="Personalize a mensagem do e-mail. O resultado da previsão será adicionado automaticamente."
+        )
+
     if st.button("Realizar Previsão"):
         try:
             previsao = carregar_modelo_e_realizar_previsao(
@@ -59,6 +107,59 @@ def modelo_preditivo_view():
                 umidade=umidade
             )
             st.success(f"🔮 Previsão realizada com sucesso!\nPrecisa Irrigar?: {previsao}")
+            
+            # Enviar e-mail se a opção estiver habilitada
+            if enviar_email_checkbox:
+                try:
+                    # Validação básica dos campos de e-mail
+                    email_valido = True
+                    
+                    if not email_assunto or not email_assunto.strip():
+                        st.error("❌ O assunto do e-mail não pode estar vazio. E-mail não enviado.")
+                        email_valido = False
+                    
+                    if email_valido and (not email_mensagem or not email_mensagem.strip()):
+                        st.error("❌ A mensagem do e-mail não pode estar vazia. E-mail não enviado.")
+                        email_valido = False
+                    
+                    # Calcular tamanho máximo do assunto base (considerando o sufixo mais longo)
+                    sufixo_max = max(SUFIXO_IRRIGACAO_NECESSARIA, SUFIXO_IRRIGACAO_NAO_NECESSARIA, key=len)
+                    tamanho_maximo_base = AWS_SNS_SUBJECT_LIMIT - len(sufixo_max)
+                    
+                    if email_valido and len(email_assunto) > tamanho_maximo_base:
+                        st.error(f"❌ O assunto do e-mail é muito longo. Máximo permitido: {tamanho_maximo_base} caracteres (você tem {len(email_assunto)}). E-mail não enviado.")
+                        email_valido = False
+                    
+                    # Enviar e-mail apenas se todas as validações passaram
+                    if email_valido:
+                        # Gerar mensagem com resultado da previsão
+                        mensagem_final = email_mensagem
+                        if RESULTADO_PLACEHOLDER in mensagem_final:
+                            mensagem_final = mensagem_final.replace(
+                                RESULTADO_PLACEHOLDER,
+                                f"Precisa Irrigar?: {previsao}"
+                            )
+                        else:
+                            mensagem_final += f"\n\n=== RESULTADO DA PREVISÃO ===\nPrecisa Irrigar?: {previsao}"
+                        
+                        # Atualizar assunto com resultado
+                        if previsao == "Sim":
+                            assunto_final = f"{email_assunto}{SUFIXO_IRRIGACAO_NECESSARIA}"
+                        else:
+                            assunto_final = f"{email_assunto}{SUFIXO_IRRIGACAO_NAO_NECESSARIA}"
+                        
+                        # Garantir que assunto final não exceda o limite (segurança adicional)
+                        if len(assunto_final) > AWS_SNS_SUBJECT_LIMIT:
+                            assunto_final = assunto_final[:AWS_SNS_SUBJECT_LIMIT - 3] + "..."
+                        
+                        resposta = enviar_email(assunto_final, mensagem_final)
+                        st.success(f"✅ E-mail enviado com sucesso! ID da Mensagem: {resposta['MessageId']}")
+                    
+                except Exception as email_error:
+                    st.error(f"❌ Erro ao enviar e-mail: {str(email_error)}")
+                    if DEBUG:
+                        raise
+                        
         except Exception as e:
             st.error(f"⚠️ Erro ao realizar a previsão: {str(e)}")
             logging.error(e)
