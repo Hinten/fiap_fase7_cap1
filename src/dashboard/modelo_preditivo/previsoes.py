@@ -105,36 +105,28 @@ def modelo_preditivo_view():
             # Enviar e-mail se a opção estiver habilitada
             if enviar_email_checkbox:
                 try:
-                    # Verificar variáveis de ambiente
-                    sns_topic_arn = os.environ.get('SNS_TOPIC_ARN')
-                    sns_region = os.environ.get('SNS_REGION')
-                    
-                    if not sns_topic_arn or not sns_region:
-                        st.error("❌ Não foi possível enviar o e-mail: Variáveis de ambiente SNS_TOPIC_ARN e SNS_REGION não configuradas.")
+                    # Gerar mensagem com resultado da previsão
+                    mensagem_final = email_mensagem
+                    if "[Será preenchido após a previsão]" in mensagem_final:
+                        mensagem_final = mensagem_final.replace(
+                            "[Será preenchido após a previsão]",
+                            f"Precisa Irrigar?: {previsao}"
+                        )
                     else:
-                        # Gerar mensagem com resultado da previsão
-                        mensagem_final = email_mensagem
-                        if "[Será preenchido após a previsão]" in mensagem_final:
-                            mensagem_final = mensagem_final.replace(
-                                "[Será preenchido após a previsão]",
-                                f"Precisa Irrigar?: {previsao}"
-                            )
-                        else:
-                            mensagem_final += f"\n\n=== RESULTADO DA PREVISÃO ===\nPrecisa Irrigar?: {previsao}"
-                        
-                        # Atualizar assunto com resultado
-                        assunto_final = email_assunto
-                        if previsao == "Sim":
-                            assunto_final = f"{email_assunto} - ✅ Irrigação Necessária"
-                        else:
-                            assunto_final = f"{email_assunto} - ⛔ Irrigação Não Necessária"
-                        
-                        resposta = enviar_email(assunto_final, mensagem_final)
-                        st.success(f"✅ E-mail enviado com sucesso! ID da Mensagem: {resposta['MessageId']}")
-                        
+                        mensagem_final += f"\n\n=== RESULTADO DA PREVISÃO ===\nPrecisa Irrigar?: {previsao}"
+                    
+                    # Atualizar assunto com resultado
+                    assunto_final = email_assunto
+                    if previsao == "Sim":
+                        assunto_final = f"{email_assunto} - ✅ Irrigação Necessária"
+                    else:
+                        assunto_final = f"{email_assunto} - ⛔ Irrigação Não Necessária"
+                    
+                    resposta = enviar_email(assunto_final, mensagem_final)
+                    st.success(f"✅ E-mail enviado com sucesso! ID da Mensagem: {resposta['MessageId']}")
+                    
                 except Exception as email_error:
                     st.error(f"❌ Erro ao enviar e-mail: {str(email_error)}")
-                    logging.error(f"Erro ao enviar e-mail de notificação: {email_error}")
                     if DEBUG:
                         raise
                         
