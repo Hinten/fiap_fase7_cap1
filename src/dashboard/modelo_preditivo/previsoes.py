@@ -7,8 +7,10 @@ from src.modelo_preditivo.realizar_previsao_func import carregar_modelo_e_realiz
 from src.settings import DEBUG
 from src.notificacoes.email import enviar_email
 
-# Constante para mensagem padrão
+# Constantes
 RESULTADO_PLACEHOLDER = "[Será preenchido após a previsão]"
+SUFIXO_IRRIGACAO_NECESSARIA = " - ✅ Irrigação Necessária"
+SUFIXO_IRRIGACAO_NAO_NECESSARIA = " - ⛔ Irrigação Não Necessária"
 
 
 def modelo_preditivo_view():
@@ -107,11 +109,6 @@ def modelo_preditivo_view():
             
             # Enviar e-mail se a opção estiver habilitada
             if enviar_email_checkbox:
-                # Verificar se as variáveis de e-mail foram definidas
-                if 'email_assunto' not in locals() or 'email_mensagem' not in locals():
-                    st.error("❌ Erro: Campos de e-mail não foram preenchidos. Marque a opção de notificação antes de clicar em 'Realizar Previsão'.")
-                    return
-                    
                 try:
                     # Validação básica dos campos de e-mail
                     if not email_assunto or not email_assunto.strip():
@@ -122,12 +119,10 @@ def modelo_preditivo_view():
                         st.error("❌ A mensagem do e-mail não pode estar vazia.")
                         return
                     
-                    # Calcular tamanho do assunto com sufixo que será adicionado
-                    sufixo_max = " - ⛔ Irrigação Não Necessária"  # O mais longo dos dois sufixos
-                    tamanho_total_estimado = len(email_assunto) + len(sufixo_max)
-                    
-                    # Limitar tamanho do assunto base para garantir que o final não exceda 100 caracteres
+                    # Calcular tamanho máximo do assunto base (considerando o sufixo mais longo)
+                    sufixo_max = max(SUFIXO_IRRIGACAO_NECESSARIA, SUFIXO_IRRIGACAO_NAO_NECESSARIA, key=len)
                     tamanho_maximo_base = 100 - len(sufixo_max)
+                    
                     if len(email_assunto) > tamanho_maximo_base:
                         st.error(f"❌ O assunto do e-mail é muito longo. Máximo permitido: {tamanho_maximo_base} caracteres (você tem {len(email_assunto)}).")
                         return
@@ -143,11 +138,10 @@ def modelo_preditivo_view():
                         mensagem_final += f"\n\n=== RESULTADO DA PREVISÃO ===\nPrecisa Irrigar?: {previsao}"
                     
                     # Atualizar assunto com resultado
-                    assunto_final = email_assunto
                     if previsao == "Sim":
-                        assunto_final = f"{email_assunto} - ✅ Irrigação Necessária"
+                        assunto_final = f"{email_assunto}{SUFIXO_IRRIGACAO_NECESSARIA}"
                     else:
-                        assunto_final = f"{email_assunto} - ⛔ Irrigação Não Necessária"
+                        assunto_final = f"{email_assunto}{SUFIXO_IRRIGACAO_NAO_NECESSARIA}"
                     
                     # Garantir que assunto final não exceda 100 caracteres (segurança adicional)
                     if len(assunto_final) > 100:
