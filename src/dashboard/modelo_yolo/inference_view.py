@@ -20,7 +20,7 @@ except ImportError as e:
     YOLO_AVAILABLE = False
 
 
-def yolo_inference_view():
+def yolo_inference_view() -> None:
     """
     View principal para realizar inferência com modelos YOLO.
     Permite carregar modelos, fazer upload de imagens e visualizar predições.
@@ -122,8 +122,8 @@ def yolo_inference_view():
             with open(model_path, "wb") as f:
                 f.write(uploaded_model.getbuffer())
             
-            st.success("✅ Salvo!")
-            st.rerun()
+            st.success(f"✅ Modelo '{uploaded_model.name}' salvo com sucesso!")
+            st.info("🔄 Recarregue a página para ver o modelo na lista de seleção.")
     
     if not available_models:
         return
@@ -258,18 +258,29 @@ def yolo_inference_view():
                         
                         detections_data = []
                         for i, box in enumerate(boxes):
-                            class_id = int(box.cls[0])
-                            confidence = float(box.conf[0])
-                            class_name = result.names[class_id]
-                            
-                            detections_data.append({
-                                "#": i + 1,
-                                "Classe": class_name,
-                                "Confiança": f"{confidence:.2%}",
-                                "Coordenadas (x1, y1, x2, y2)": 
-                                    f"({int(box.xyxy[0][0])}, {int(box.xyxy[0][1])}, "
-                                    f"{int(box.xyxy[0][2])}, {int(box.xyxy[0][3])})"
-                            })
+                            try:
+                                class_id = int(box.cls[0])
+                                confidence = float(box.conf[0])
+                                class_name = result.names.get(class_id, f"Class_{class_id}")
+                                
+                                # Validate that we have enough coordinates
+                                if len(box.xyxy[0]) >= 4:
+                                    coords = (
+                                        f"({int(box.xyxy[0][0])}, {int(box.xyxy[0][1])}, "
+                                        f"{int(box.xyxy[0][2])}, {int(box.xyxy[0][3])})"
+                                    )
+                                else:
+                                    coords = "N/A"
+                                
+                                detections_data.append({
+                                    "#": i + 1,
+                                    "Classe": class_name,
+                                    "Confiança": f"{confidence:.2%}",
+                                    "Coordenadas (x1, y1, x2, y2)": coords
+                                })
+                            except (IndexError, KeyError) as e:
+                                logging.warning(f"Erro ao processar detecção {i}: {e}")
+                                continue
                         
                         st.dataframe(detections_data, use_container_width=True)
                     else:
