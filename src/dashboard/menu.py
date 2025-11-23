@@ -7,6 +7,7 @@ from src.dashboard.database.importar import importar_db_page
 from src.dashboard.generic.table_view import TableView
 from src.dashboard.modelo_preditivo.exploracao_de_dados import exploracao_de_dados
 from src.dashboard.modelo_preditivo.previsoes import modelo_preditivo_view, previsao_manual_page
+from src.dashboard.modelo_yolo.inference_view import yolo_inference_page
 from src.dashboard.notificacoes.email import subscrever_email_page
 from src.dashboard.plots.views import grafico_umidade_view, grafico_estado_do_rele, grafico_ph, grafico_fosforo, \
     grafico_potassio, grafico_tudo
@@ -92,6 +93,15 @@ def notificacoes_menu():
     st.sidebar.header("Notificações")
     st.sidebar.page_link(subscrever_email_page)
 
+def modelo_yolo_menu():
+    """
+    Função para exibir o menu lateral do aplicativo.
+    Cria a página de inferência YOLO.
+    """
+
+    st.sidebar.header("Modelo YOLO")
+    st.sidebar.page_link(yolo_inference_page)
+
 def menu():
     """
     Função para exibir o menu lateral do aplicativo.
@@ -105,5 +115,6 @@ def menu():
     plot_menu()
     weather_menu()
     modelo_preditivo_menu()
+    modelo_yolo_menu()
     export_import_menu()
 

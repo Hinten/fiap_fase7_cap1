@@ -666,6 +666,10 @@ O sistema foi desenvolvido em Python e utiliza um banco de dados Oracle para arm
   plotly==6.1.2
   joblib==1.5.1
   scikit-learn==1.7.0
+  boto3==1.40.41
+  ultralytics==8.0.196
+  opencv-python==4.8.1.78
+  Pillow==10.1.0
 ```
 
 ## 🔗 Instalação
@@ -979,6 +983,218 @@ Para mais detalhes sobre a implementação, consulte o arquivo [previsoes.py](sr
 Conforme citado anteriormente, o projeto foi estruturado para permitir a integração com o ESP32, possibilitando que o dispositivo envie leituras de sensores e receba decisões de irrigação.
 
 Esta previsão automática é realizada através de uma API que recebe os dados dos sensores e utiliza um modelo preditivo treinado para decidir se a irrigação deve ser ativada ou não, conforme pode ser verificado no arquivo [prever_irrigacao.py](src/wokwi_api/prever_irrigacao.py)
+
+# Detecção de Objetos com Modelos YOLO
+
+O projeto agora inclui uma funcionalidade completa de detecção de objetos utilizando modelos YOLO (You Only Look Once) treinados. Esta funcionalidade permite aos usuários treinar modelos personalizados e utilizá-los diretamente no dashboard para análise de imagens em tempo real.
+
+## Notebooks de Treinamento YOLO
+
+No diretório `src/modelo_yolo/`, encontram-se três notebooks Jupyter para treinamento de modelos:
+
+1. **yolo_padrao_fiap.ipynb** - Treinamento com YOLO padrão (Ultralytics YOLOv8)
+   - Utiliza YOLOv8s (small) como base
+   - Configuração otimizada para datasets personalizados
+   - Treinamento com 150 épocas e early stopping (patience=30)
+   - Suporte para GPU (device=0) e CPU
+
+2. **yolo7.ipynb** - Treinamento com YOLOv7
+   - Implementação alternativa usando YOLOv7
+   - Adequado para casos específicos de detecção
+
+3. **CNN.ipynb** - Treinamento com Redes Neurais Convolucionais
+   - Abordagem alternativa usando CNN personalizada
+   - Útil para comparação de desempenho
+
+### Formato dos Modelos Treinados
+
+Os modelos YOLO são salvos no formato `.pt` (PyTorch), que contém:
+- Pesos do modelo treinado
+- Arquitetura da rede neural
+- Metadados do treinamento (classes, hiperparâmetros)
+- Configurações de normalização
+
+### Workflow de Treinamento
+
+1. **Preparação do Dataset**
+   - Organize suas imagens e anotações
+   - Crie um arquivo `data.yaml` com as configurações:
+     ```yaml
+     path: /caminho/para/dataset
+     train: images/train
+     val: images/val
+     test: images/test
+     
+     names:
+       0: classe1
+       1: classe2
+       # ... mais classes
+     ```
+
+2. **Treinamento do Modelo**
+   - Abra um dos notebooks em `src/modelo_yolo/`
+   - Configure os parâmetros de treinamento:
+     - `epochs`: Número de épocas (padrão: 150)
+     - `imgsz`: Tamanho da imagem (padrão: 640)
+     - `batch`: Tamanho do batch (padrão: 16)
+     - `patience`: Early stopping (padrão: 30)
+   - Execute o treinamento
+   - O modelo será salvo automaticamente como `best.pt`
+
+3. **Salvamento do Modelo**
+   - Após o treinamento, copie o arquivo `best.pt` para:
+     ```
+     src/modelo_yolo/modelos_treinados/
+     ```
+   - Renomeie o arquivo para algo descritivo, ex: `yolo_frutas_v1.pt`
+
+## Inferência YOLO no Dashboard
+
+O dashboard agora inclui uma página dedicada para realizar inferência com modelos YOLO treinados.
+
+### Como Acessar
+
+1. Execute o dashboard: `streamlit run main_dash.py`
+2. No menu lateral, navegue até **"Modelo YOLO" → "Inferência YOLO"**
+
+### Funcionalidades da View de Inferência
+
+#### 1️⃣ Seleção do Modelo
+- **Lista de modelos**: Exibe todos os modelos `.pt` disponíveis em `src/modelo_yolo/modelos_treinados/`
+- **Upload de modelo**: Permite fazer upload de novos modelos diretamente pelo dashboard
+- **Informações do modelo**: Exibe nome e tamanho do arquivo
+
+#### 2️⃣ Upload de Imagem
+- **Formatos suportados**: JPG, JPEG, PNG, BMP
+- **Preview**: Visualização da imagem original antes da inferência
+- **Suporte para múltiplas imagens**: Processe uma imagem por vez
+
+#### 3️⃣ Configurações de Detecção
+Ajuste os parâmetros de detecção para otimizar os resultados:
+
+- **Confiança Mínima** (0.0 - 1.0, padrão: 0.25)
+  - Define o limiar de confiança para aceitar uma detecção
+  - Valores mais altos = menos detecções, mais precisas
+  - Valores mais baixos = mais detecções, podem incluir falsos positivos
+
+- **IoU (NMS)** (0.0 - 1.0, padrão: 0.45)
+  - Limiar de Intersection over Union para Non-Maximum Suppression
+  - Remove detecções duplicadas/sobrepostas
+  - Valores mais altos = mantém mais detecções sobrepostas
+
+- **Detecções Máximas** (1 - 1000, padrão: 300)
+  - Número máximo de objetos detectados por imagem
+  - Útil para limitar processamento em imagens com muitos objetos
+
+#### 4️⃣ Resultados da Detecção
+
+Após clicar em **"🚀 Detectar Objetos"**, o sistema exibe:
+
+1. **Imagem Anotada**
+   - Bounding boxes coloridos ao redor dos objetos detectados
+   - Labels com nome da classe e porcentagem de confiança
+   - Visualização lado a lado com a imagem original
+
+2. **Métricas de Detecção**
+   - Total de detecções encontradas
+   - Confiança média das detecções
+   - Confiança máxima atingida
+
+3. **Tabela de Detecções**
+   - Lista detalhada de cada objeto detectado
+   - Informações incluem:
+     - Número da detecção
+     - Classe/categoria do objeto
+     - Porcentagem de confiança
+     - Coordenadas do bounding box (x1, y1, x2, y2)
+
+4. **Download da Imagem Anotada**
+   - Botão para baixar a imagem com as detecções desenhadas
+   - Formato PNG de alta qualidade
+   - Nome do arquivo preservado com prefixo "deteccoes_"
+
+### Exemplo de Uso
+
+```python
+# 1. Treine seu modelo (nos notebooks)
+# 2. Salve em src/modelo_yolo/modelos_treinados/meu_modelo.pt
+# 3. No dashboard:
+#    - Selecione "Inferência YOLO"
+#    - Escolha "meu_modelo"
+#    - Faça upload de uma imagem
+#    - Ajuste parâmetros se necessário
+#    - Clique em "Detectar Objetos"
+# 4. Visualize resultados e baixe a imagem anotada
+```
+
+## Estrutura de Arquivos YOLO
+
+```
+src/
+├── modelo_yolo/
+│   ├── yolo_padrao_fiap.ipynb    # Notebook de treinamento
+│   ├── yolo7.ipynb               # Alternativa com YOLOv7
+│   ├── CNN.ipynb                 # Alternativa com CNN
+│   ├── model_loader.py           # Utilitário de carregamento
+│   └── modelos_treinados/        # Diretório para modelos .pt
+│       ├── README.md             # Instruções de uso
+│       ├── .gitkeep              # Mantém diretório no git
+│       └── seu_modelo.pt         # Seus modelos treinados
+└── dashboard/
+    └── modelo_yolo/
+        ├── __init__.py
+        └── inference_view.py     # View de inferência no dashboard
+```
+
+## Dependências Adicionais
+
+As seguintes bibliotecas foram adicionadas ao `requirements.txt` para suportar a funcionalidade YOLO:
+
+```
+ultralytics==8.0.196      # Framework YOLO oficial
+opencv-python==4.8.1.78   # Processamento de imagens
+Pillow==10.1.0            # Manipulação de imagens
+```
+
+Para instalar:
+```bash
+pip install -r requirements.txt
+```
+
+## Troubleshooting
+
+### Modelo não aparece na lista
+- Verifique se o arquivo `.pt` está em `src/modelo_yolo/modelos_treinados/`
+- Recarregue a página do dashboard (F5)
+
+### Erro ao carregar modelo
+- Certifique-se de que o arquivo não está corrompido
+- Verifique se você tem memória RAM suficiente
+- Modelos grandes (>100MB) podem demorar para carregar
+
+### Nenhum objeto detectado
+- Tente diminuir o limite de confiança (ex: 0.15)
+- Verifique se o modelo foi treinado para detectar os objetos na imagem
+- Certifique-se de que a imagem tem boa qualidade e iluminação
+
+### Muitos falsos positivos
+- Aumente o limite de confiança (ex: 0.5 ou mais)
+- Ajuste o threshold de IoU
+- Considere retreinar o modelo com mais dados
+
+## Recursos Avançados
+
+### Cache de Modelos
+O sistema implementa cache automático de modelos carregados, melhorando significativamente o desempenho em inferências subsequentes com o mesmo modelo.
+
+### Otimização de Performance
+- Modelos são carregados sob demanda (lazy loading)
+- Cache de modelos mantido durante a sessão
+- Suporte para GPU quando disponível
+- Processamento otimizado de imagens
+
+### Logs e Debugging
+Em modo de desenvolvimento (`DEBUG=true` no `.env`), logs detalhados são exibidos para facilitar o debugging.
 
 # Integração Python com API Pública
 
@@ -1402,6 +1618,7 @@ Dentre os arquivos e pastas presentes na raiz do projeto, definem-se:
   - <b>database</b>: Execução dos comandos de banco de dados, como Conectar, Cadastrar, Listar, Editar e Excluir.
   - <b>logger</b>: Código responsável por registrar as operações realizadas no banco de dados, como inserções, atualizações e exclusões.
   - <b>modelo_preditivo</b>: Código responsável por treinar o modelo preditivo utilizado para prever a necessidade de irrigação, utilizando a biblioteca Scikit-learn.
+  - <b>modelo_yolo</b>: Notebooks para treinamento de modelos YOLO de detecção de objetos e utilitários para inferência. Inclui o diretório `modelos_treinados/` para armazenar os modelos `.pt` treinados.
   - <b>notificacoes</b>: Sistema de mensageria e alertas automáticos usando AWS SNS (Simple Notification Service) para notificar condições críticas dos sensores. Inclui módulos para envio de e-mails e avaliação de alertas com throttling e consolidação.
   - <b>plots</b>: Pasta que contém os arquivos de plotagem dos gráficos utilizados no dashboard, como gráficos de barras, linhas e dispersão.
   - <b>service</b>: Conexão com a api pública de previsão do tempo, responsável por coletar dados meteorológicos.
