@@ -1,0 +1,13 @@
+*.pyc
+__pycache__/
+*__pycache__/
+.idea
+.vscode
+*.log
+*.db
+.venv
+venv
+.venv_segmentacao
+src/ir_alem_2/dataset_segmentado
+src/ir_alem_2/dataset_sem_segmentacao
+src/ir_alem_2/sam_vit_h_4b8939.pth

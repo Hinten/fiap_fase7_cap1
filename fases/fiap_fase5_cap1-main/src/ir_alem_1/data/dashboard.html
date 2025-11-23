@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Greenhouse Monitoring Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+
+        .card {
+            padding: 20px;
+            margin: 10px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <h2>🌱 Greenhouse Monitoring Dashboard</h2>
+    <div class="card">
+        <h3>🌡️ Temperatura: <span id="temperature">--.- °C</span></h3>
+    </div>
+    <div class="card">
+        <h3>💧 Umidade do Ar: <span id="humidity">--.- %</span></h3>
+    </div>
+    <script>
+        async function fetchData() {
+            try {
+                const response = await fetch('/data');
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                document.getElementById('temperature').textContent = (typeof data.temperature === 'number' ? data.temperature.toFixed(1) : data.temperature) + ' °C';
+                document.getElementById('humidity').textContent = (typeof data.humidity === 'number' ? data.humidity.toFixed(1) : data.humidity) + ' %';
+            } catch (error) {
+                console.error('Fetch error:', error);
+            }
+        }
+        setInterval(fetchData, 2000);
+        fetchData();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,14 @@
+src/wokwi/.pio
+src/wokwi/.vscode
+*.pyc
+__pycache__/
+.idea
+.vscode
+*.log
+*.db
+.venv
+venv
+.pio
+.tar
+*.tar.gz
+*egg-info
