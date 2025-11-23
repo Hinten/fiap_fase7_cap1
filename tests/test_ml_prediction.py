@@ -18,7 +18,7 @@ class TestConverteDataLeitura:
         """Test conversion at midnight"""
         from src.modelo_preditivo.realizar_previsao_func import converte_data_leitura
         
-        hora = datetime(2025, 5, 20, 0, 0, 0)
+        hora = datetime(2024, 5, 20, 0, 0, 0)
         resultado = converte_data_leitura(hora)
         
         assert resultado == 0.0
@@ -27,7 +27,7 @@ class TestConverteDataLeitura:
         """Test conversion at noon"""
         from src.modelo_preditivo.realizar_previsao_func import converte_data_leitura
         
-        hora = datetime(2025, 5, 20, 12, 0, 0)
+        hora = datetime(2024, 5, 20, 12, 0, 0)
         resultado = converte_data_leitura(hora)
         
         assert resultado == 720.0  # 12 * 60
@@ -36,7 +36,7 @@ class TestConverteDataLeitura:
         """Test conversion with minutes and seconds"""
         from src.modelo_preditivo.realizar_previsao_func import converte_data_leitura
         
-        hora = datetime(2025, 5, 20, 14, 30, 30)
+        hora = datetime(2024, 5, 20, 14, 30, 30)
         resultado = converte_data_leitura(hora)
         
         # 14 hours * 60 + 30 minutes + 30 seconds / 60
@@ -47,7 +47,7 @@ class TestConverteDataLeitura:
         """Test conversion at end of day"""
         from src.modelo_preditivo.realizar_previsao_func import converte_data_leitura
         
-        hora = datetime(2025, 5, 20, 23, 59, 59)
+        hora = datetime(2024, 5, 20, 23, 59, 59)
         resultado = converte_data_leitura(hora)
         
         # 23 hours * 60 + 59 minutes + 59 seconds / 60
@@ -88,7 +88,7 @@ class TestCarregarModeloERealizarPrevisao:
         # Execute
         resultado = carregar_modelo_e_realizar_previsao(
             path_arquivo='fake_path.pkl',
-            hora_leitura=datetime(2025, 5, 20, 14, 30, 0),
+            hora_leitura=datetime(2024, 5, 20, 14, 30, 0),
             fosforo=1,
             potassio=1,
             ph=1,
@@ -113,7 +113,7 @@ class TestCarregarModeloERealizarPrevisao:
         # Execute
         resultado = carregar_modelo_e_realizar_previsao(
             path_arquivo='fake_path.pkl',
-            hora_leitura=datetime(2025, 5, 20, 14, 30, 0),
+            hora_leitura=datetime(2024, 5, 20, 14, 30, 0),
             fosforo=1,
             potassio=1,
             ph=1,
@@ -135,7 +135,7 @@ class TestCarregarModeloERealizarPrevisao:
         # Execute
         carregar_modelo_e_realizar_previsao(
             path_arquivo='fake_path.pkl',
-            hora_leitura=datetime(2025, 5, 20, 14, 30, 0),
+            hora_leitura=datetime(2024, 5, 20, 14, 30, 0),
             fosforo=0,
             potassio=0,
             ph=0,
@@ -178,7 +178,7 @@ class TestRealizarPrevisaoModeloPadrao:
         
         # Execute
         resultado = realizar_previsao_modelo_padrao(
-            hora_leitura=datetime(2025, 5, 20, 14, 30, 0),
+            hora_leitura=datetime(2024, 5, 20, 14, 30, 0),
             fosforo=1,
             potassio=1,
             ph=1,
@@ -202,7 +202,7 @@ class TestRealizarPrevisaoModeloPadrao:
         mock_carregar.return_value = 'Não'
         
         # Test parameters
-        hora = datetime(2025, 5, 20, 10, 15, 30)
+        hora = datetime(2024, 5, 20, 10, 15, 30)
         fosforo = 0
         potassio = 1
         ph = 0
