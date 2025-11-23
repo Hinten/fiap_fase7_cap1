@@ -206,8 +206,6 @@ nano .env  # ou use seu editor preferido
 **2. Inicie o Lab**
    - Clique no botão "Start Lab"
    - Aguarde até o indicador ficar verde
-   
-   ![Start Lab](docs/screenshots/01_start_lab.png)
 
 **3. Obtenha as Credenciais**
    - Clique em "AWS Details"
@@ -217,8 +215,6 @@ nano .env  # ou use seu editor preferido
      - `AWS_SECRET_ACCESS_KEY`
      - `AWS_SESSION_TOKEN`
    
-   ![AWS Details](docs/screenshots/02_aws_details.png)
-
 **4. Configure no Projeto**
    - Cole as credenciais no arquivo `.env`
    - Ou exporte como variáveis de ambiente:

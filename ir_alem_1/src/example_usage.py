@@ -22,6 +22,8 @@ import json
 from pathlib import Path
 from typing import Dict, Any
 
+from aws_config import print_credential_status
+
 # Adiciona o diretório src ao path para imports
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -351,6 +353,8 @@ def main():
     
     # Verifica variáveis de ambiente
     print("\n🔧 Verificando configuração...\n")
+
+    print_credential_status()
     
     aws_access_key = os.getenv('AWS_ACCESS_KEY_ID')
     aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')

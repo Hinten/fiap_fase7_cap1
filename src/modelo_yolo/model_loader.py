@@ -139,3 +139,8 @@ def realizar_inferencia(model, image_source, conf_threshold: float = 0.25,
     except Exception as e:
         logging.error(f"Erro durante inferência: {str(e)}")
         raise
+
+
+if __name__ == "__main__":
+    # Exemplo de uso
+    from ultralytics import YOLO
