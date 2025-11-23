@@ -650,7 +650,7 @@ Essas classes podem ser encontradas na pasta `src/database/models`, e todas elas
 O sistema foi desenvolvido em Python e utiliza um banco de dados Oracle para armazenar os dados. O código é modularizado, permitindo fácil manutenção e expansão.
 
 ## 📦 Requisitos
-- Python 3.13.2
+- Python 3.13.2 (ou 3.12+)
   - Bibliotecas:
 ```plaintext
   oracledb==3.1.0
@@ -670,6 +670,10 @@ O sistema foi desenvolvido em Python e utiliza um banco de dados Oracle para arm
   ultralytics==8.0.196
   opencv-python==4.8.1.78
   Pillow==10.1.0
+  httpx>=0.28.0
+  pytest>=9.0.0
+  pytest-cov>=7.0.0
+  pytest-mock>=3.15.0
 ```
 
 ## 🔗 Instalação
@@ -683,6 +687,57 @@ O sistema foi desenvolvido em Python e utiliza um banco de dados Oracle para arm
     streamlit run main_dash.py
     ```
     > **Nota:** O código foi desenvolvido para rodar em ambiente local, utilizando o Streamlit.
+
+## 🧪 Testes
+
+O projeto inclui uma suíte completa de testes automatizados localizada no diretório `tests/`.
+
+### Executar Todos os Testes
+```bash
+pytest
+```
+
+### Executar Testes com Relatório de Cobertura
+```bash
+pytest --cov=src --cov-report=html
+```
+
+O relatório HTML de cobertura será gerado em `htmlcov/index.html`.
+
+### Executar Testes Específicos
+```bash
+# Testar apenas o sistema de alertas
+pytest tests/test_alertas.py
+
+# Testar apenas o sistema de e-mail
+pytest tests/test_email.py
+
+# Testar apenas o modelo preditivo
+pytest tests/test_ml_prediction.py
+
+# Testar apenas os endpoints da API
+pytest tests/test_api.py
+```
+
+### Estatísticas de Testes
+- **Total de Testes**: 52 testes passando
+- **Cobertura de Código**: 49% (foco nos módulos principais)
+- **Módulos Testados**:
+  - Sistema de Alertas (alertas.py): 100% cobertura
+  - Notificações por E-mail (email.py): 76% cobertura
+  - Modelo Preditivo ML (realizar_previsao_func.py): 96% cobertura
+  - Endpoints da API (api_basica.py, init_sensor.py): 78% cobertura
+
+### Categorias de Testes
+- **Testes Unitários**: Testam funções individuais isoladamente
+- **Testes de Integração**: Testam interação entre componentes
+- **Testes de API**: Testam endpoints FastAPI e validação de requisições
+- **Testes de ML**: Testam carregamento e predição de modelos
+
+> **Nota:** Os testes utilizam mocks para evitar dependências externas (AWS SNS, banco de dados, modelos ML), garantindo execução rápida e confiável.
+
+Para mais detalhes sobre os testes, consulte [tests/README.md](tests/README.md).
+
 
 
 ## Arquivo de Configuração
@@ -1631,6 +1686,7 @@ Dentre os arquivos e pastas presentes na raiz do projeto, definem-se:
 
 ## 🗃 Histórico de lançamentos
 
+* 0.1.6 - 23/11/2025  - Adição de suíte completa de testes (52 testes), melhorias no README e validação do projeto
 * 0.1.5 - 20/05/2025  - Atualizações no readme, melhorias no código e correção de bugs
 * 0.1.2 - 20/05/2025  - Atualizações finais no readme e correção de bugs
 * 0.1.1 - 18/05/2025  - Atualizações do readme, melhorias no código e correção de bugs
